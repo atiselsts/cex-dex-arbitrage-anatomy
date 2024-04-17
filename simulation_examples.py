@@ -13,16 +13,13 @@ ETH_VOLATILITY = 0.5
 
 ETH_VOLATILITY_PER_SECOND = ETH_VOLATILITY / np.sqrt(365 * 24 * 60 * 60)
 
-NUM_SIMULATIONS = 1000
-
 BLOCK_TIMES_SEC = [1, 2, 3, 4, 6, 12]
 
-LONG_BLOCK_TIME_SEC = BLOCK_TIMES_SEC[-1]
+NUM_SIMULATIONS = 1000
 
 ############################################################
 
-def get_price_paths(n, sigma, mu):
-    M = NUM_SIMULATIONS
+def get_price_paths(n, sigma, mu, M=NUM_SIMULATIONS):
     St = np.exp((mu - sigma ** 2 / 2) + sigma * np.random.normal(0, 1, size=(M, n-1)).T)
 
     # we want the initial prices to be randomly distributed in the pool's non-arbitrage space
@@ -35,15 +32,18 @@ def get_price_paths(n, sigma, mu):
 
 ############################################################
 
-def estimate_performance(prices):
+def estimate_performance(prices, swap_fee_bps, basefee_usd):
     dex = DEX()
+    dex.set_fee_bps(swap_fee_bps)
+    if basefee_usd is not None:
+        dex.set_basefee_usd(basefee_usd)
     for price in prices:
         dex.maybe_arbitrage(price)
     return dex.lvr, dex.lp_fees, dex.sbp_revenue, dex.basefees, dex.num_tx
 
 ############################################################
 
-def estimate_mean_performance(all_prices):
+def estimate_mean_performance(all_prices, swap_fee_bps, basefee_usd=None):
     all_lvr = []
     all_lp_fees = []
     all_sbp_revenue = []
@@ -54,17 +54,15 @@ def estimate_mean_performance(all_prices):
         # take the last elements from the second dimension
         all_prices = all_prices[:,-1,:]
 
-    #last_prices = []
     for sim in range(all_prices.shape[1]):
         prices = all_prices[:,sim]
-        #last_prices.append(prices[-1])
-        lvr, lp_fees, spb_revenue, basefees, num_tx = estimate_performance(prices)
+        lvr, lp_fees, spb_revenue, basefees, num_tx = \
+            estimate_performance(prices, swap_fee_bps, basefee_usd)
         all_lvr.append(lvr)
         all_lp_fees.append(lp_fees)
         all_sbp_revenue.append(spb_revenue)
         all_basefees.append(basefees)
         all_tx.append(num_tx)
-    #print(last_prices)
 
     return np.mean(all_lvr), np.mean(all_lp_fees), np.mean(all_sbp_revenue), \
         np.mean(all_basefees), np.mean(all_tx)
@@ -72,8 +70,8 @@ def estimate_mean_performance(all_prices):
 ############################################################
 
 # simulate the performance of 100 12-second long intervals, depending on the block time
-def simulate_single_interval():
-    n = LONG_BLOCK_TIME_SEC * 100
+def simulate_some_blocks():
+    n = 100 * 12
     all_prices = get_price_paths(n, sigma=ETH_VOLATILITY_PER_SECOND, mu=0.0)
     all_lvr = []
     all_lp_fees = []
@@ -85,7 +83,8 @@ def simulate_single_interval():
             all_prices = all_prices.reshape(n // block_time, block_time, NUM_SIMULATIONS)
 
         print("compute performance for block time", block_time)
-        lvr, lp_fees, sbp_revenue, basefees, num_tx = estimate_mean_performance(all_prices)
+        lvr, lp_fees, sbp_revenue, basefees, num_tx = \
+            estimate_mean_performance(all_prices, swap_fee_bps=5)
         all_lvr.append(lvr)
         all_lp_fees.append(lp_fees)
         all_sbp_revenue.append(sbp_revenue)
@@ -112,7 +111,7 @@ def simulate_single_interval():
     
 def main():
     np.random.seed(123456)
-    simulate_single_interval()
+    simulate_some_blocks()
 
 
 if __name__ == '__main__':

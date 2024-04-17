@@ -19,7 +19,7 @@ POOL_RESERVES_ETH = POOL_RESERVES_USD / ETH_PRICE
 POOL_FEE_PPM = 500 # corresponds to 0.05%
 
 # For simplicity, assume that each swap burns exactly $10 worth of Ether
-BASEFEE_USD = 10
+DEFAULT_BASEFEE_USD = 10
 
 ############################################################
 
@@ -28,6 +28,7 @@ class DEX:
         # -- immutables
         self.fee_ppm = POOL_FEE_PPM
         self.fee_factor = 1_000_000 / (1_000_000 - self.fee_ppm)
+        self.basefee_usd = DEFAULT_BASEFEE_USD
         # -- pool's state
         # the price is fully determined by the reserves (real or virtual)
         self.reserve_x = POOL_RESERVES_ETH
@@ -43,6 +44,14 @@ class DEX:
         self.debug_log = False
         self.preset_target_price = None
 
+
+    def set_fee_bps(self, fee_bps):
+        self.fee_ppm = fee_bps * 100
+        self.fee_factor = 1_000_000 / (1_000_000 - self.fee_ppm)
+
+
+    def set_basefee_usd(self, basefee_usd):
+        self.basefee_usd = basefee_usd
 
     def price(self):
         return self.reserve_y / self.reserve_x
@@ -76,7 +85,7 @@ class DEX:
 
         self.volume += amount_in_x * price
         self.num_tx += 1
-        self.basefees += BASEFEE_USD
+        self.basefees += self.basefee_usd
         return y_out
 
 
@@ -91,7 +100,7 @@ class DEX:
 
         self.volume += amount_in_y
         self.num_tx += 1
-        self.basefees += BASEFEE_USD
+        self.basefees += self.basefee_usd
         return x_out
 
 
@@ -148,10 +157,11 @@ class DEX:
             lp_fee = delta_y_with_fee - delta_y
 
         single_transaction_lvr = -(delta_x * cex_price + delta_y)
-        sbp_revenue = single_transaction_lvr - lp_fee - BASEFEE_USD
-        #print(single_transaction_lvr, lp_fee, sbp_revenue)
+        sbp_revenue = single_transaction_lvr - lp_fee - self.basefee_usd
         if sbp_revenue <= 0.0:
             # the trade does not happen due to the friction from the blockchain base fee 
+            if self.debug_log:
+                print("sbp_revenue <= 0.0:", single_transaction_lvr, lp_fee, sbp_revenue)
             return False
 
         # trade happens; first update the pool's state
@@ -169,7 +179,7 @@ class DEX:
         self.lp_fees += lp_fee
         self.lvr += single_transaction_lvr
         self.sbp_revenue += sbp_revenue
-        self.basefees += BASEFEE_USD
+        self.basefees += self.basefee_usd
         self.num_tx += 1
 
         return True
