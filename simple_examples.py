@@ -17,7 +17,7 @@ from dex import DEX, ETH_PRICE
 ############################################################
 
 # this verifies that the pool accurately computes the target price to maximize the arbitrager revenues
-def plot_revenue_on_target_price():
+def plot_profits_on_target_price():
     fig, ax = pl.subplots()
     fig.set_size_inches((6, 4))
 
@@ -28,21 +28,21 @@ def plot_revenue_on_target_price():
     else:
         prices = np.linspace(cex_price, cex_price * 1.01, 100000)
     #print(prices)
-    revenues = []
+    profits = []
     for target_price in prices:
         dex = DEX()
-        dex.debug_log = False
         dex.preset_target_price = target_price
         dex.maybe_arbitrage(cex_price)
-        revenues.append(dex.sbp_revenue)
+        profits.append(dex.sbp_profits)
 
-    m = np.argmax(revenues)
+    m = np.argmax(profits)
     print("best price=", prices[m])
     print("dex target=", DEX().get_target_price(cex_price))
-    pl.plot(prices, revenues, label="SBP revenue")
+    pl.plot(prices, profits)
     pl.xlabel("Target price, $")
-    pl.ylabel("SBP revenue")
+    pl.ylabel("SBP profit")
     pl.ylim(ymin=0)
+    pl.title("Arbitrager profit depending on target price")
 
     pl.show()
     pl.close()
@@ -62,6 +62,7 @@ def simulate_arbitrage_trade(dex, message, cex_price):
 def example_1():
     print("Example 1: +0.1%")
     dex = DEX()
+    dex.debug_log = True
     simulate_arbitrage_trade(dex, "+0.1% change", ETH_PRICE * 100.1 / 100)
     print("")
 
@@ -73,6 +74,7 @@ def example_1():
 def example_2():
     print("Example 2: +1%")
     dex = DEX()
+    dex.debug_log = True
     simulate_arbitrage_trade(dex, "+1.0% change", ETH_PRICE * 101 / 100)
     print("")
 
@@ -84,14 +86,18 @@ def example_2():
 def example_3():
     print("Example 3: +0.1% then +0.2%")
     short_block_dex = DEX()
+    short_block_dex.debug_log = True
     simulate_arbitrage_trade(short_block_dex, None, ETH_PRICE * 100.1 / 100)
     simulate_arbitrage_trade(short_block_dex, None, ETH_PRICE * 100.2 / 100)
+    short_block_lp_loss = (short_block_dex.lvr - short_block_dex.lp_fees) / short_block_dex.lvr
 
     long_block_dex = DEX()
+    long_block_dex.debug_log = True
     simulate_arbitrage_trade(long_block_dex, None, ETH_PRICE * 100.2 / 100)
+    long_block_lp_loss = (long_block_dex.lvr - long_block_dex.lp_fees) / long_block_dex.lvr
 
-    print(f"short blocks: LVR={short_block_dex.lvr:.6f} lp_fee={short_block_dex.lp_fees:.6f}")
-    print(f"long blocks:  LVR={long_block_dex.lvr:.6f} lp_fee={long_block_dex.lp_fees:.6f}")
+    print(f"short blocks: LVR={short_block_dex.lvr:.6f} lp_fee={short_block_dex.lp_fees:.6f} loss={100*short_block_lp_loss:.1f}%")
+    print(f"long blocks:  LVR={long_block_dex.lvr:.6f} lp_fee={long_block_dex.lp_fees:.6f} loss={100*long_block_lp_loss:.1f}%")
     print("")
 
 
@@ -103,14 +109,18 @@ def example_3():
 def example_4():
     print("Example 4: -0.1% then +0.2%")
     short_block_dex = DEX()
+    short_block_dex.debug_log = True
     simulate_arbitrage_trade(short_block_dex, None, ETH_PRICE * 99.9 / 100)
     simulate_arbitrage_trade(short_block_dex, None, ETH_PRICE * 100.2 / 100)
+    short_block_lp_loss = (short_block_dex.lvr - short_block_dex.lp_fees) / short_block_dex.lvr
 
     long_block_dex = DEX()
+    long_block_dex.debug_log = True
     simulate_arbitrage_trade(long_block_dex, None, ETH_PRICE * 100.2 / 100)
+    long_block_lp_loss = (long_block_dex.lvr - long_block_dex.lp_fees) / long_block_dex.lvr
 
-    print(f"short blocks: LVR={short_block_dex.lvr:.6f} lp_fee={short_block_dex.lp_fees:.6f}")
-    print(f"long blocks:  LVR={long_block_dex.lvr:.6f} lp_fee={long_block_dex.lp_fees:.6f}")
+    print(f"short blocks: LVR={short_block_dex.lvr:.6f} lp_fee={short_block_dex.lp_fees:.6f} loss={100*short_block_lp_loss:.1f}%")
+    print(f"long blocks:  LVR={long_block_dex.lvr:.6f} lp_fee={long_block_dex.lp_fees:.6f} loss={100*long_block_lp_loss:.1f}%")
     print("")
 
 ############################################################x
@@ -151,7 +161,7 @@ def main():
     example_2()
     example_3()
     example_4()
-    plot_revenue_on_target_price()
+    plot_profits_on_target_price()
 
 
 if __name__ == '__main__':

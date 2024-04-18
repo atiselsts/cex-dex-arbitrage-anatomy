@@ -37,7 +37,7 @@ class DEX:
         self.volume = 0
         self.lp_fees = 0
         self.lvr = 0
-        self.sbp_revenue = 0
+        self.sbp_profits = 0
         self.basefees = 0
         self.num_tx = 0
         # debugging
@@ -157,19 +157,19 @@ class DEX:
             lp_fee = delta_y_with_fee - delta_y
 
         single_transaction_lvr = -(delta_x * cex_price + delta_y)
-        sbp_revenue = single_transaction_lvr - lp_fee - self.basefee_usd
-        if sbp_revenue <= 0.0:
+        sbp_profit = single_transaction_lvr - lp_fee - self.basefee_usd
+        if sbp_profit <= 0.0:
             # the trade does not happen due to the friction from the blockchain base fee 
             if self.debug_log:
-                print("sbp_revenue <= 0.0:", single_transaction_lvr, lp_fee, sbp_revenue)
+                print("sbp_profit <= 0.0:", single_transaction_lvr, lp_fee, sbp_profit)
             return False
 
         # trade happens; first update the pool's state
         if self.debug_log:
             new_reserve_x = self.reserve_x + delta_x
             new_reserve_y = self.reserve_y + delta_y
-            lvr_recap = lp_fee / single_transaction_lvr
-            print(f" DEX price: {self.reserve_y/self.reserve_x:.4f}->{new_reserve_y/new_reserve_x:.4f} CEX price: {cex_price:.4f} LP fee={lp_fee:.4f} LVR={single_transaction_lvr:.4f} LVR recapture: {lvr_recap*100:.2f}%")
+            lp_loss_vs_lvr = (single_transaction_lvr - lp_fee) / single_transaction_lvr
+            print(f" DEX price: {self.reserve_y/self.reserve_x:.4f}->{new_reserve_y/new_reserve_x:.4f} CEX price: {cex_price:.4f} LP fee={lp_fee:.4f} LVR={single_transaction_lvr:.4f} loss: {100*lp_loss_vs_lvr:.1f}%")
 
         self.reserve_x += delta_x
         self.reserve_y += delta_y
@@ -178,7 +178,7 @@ class DEX:
         self.volume += abs(delta_y) + lp_fee
         self.lp_fees += lp_fee
         self.lvr += single_transaction_lvr
-        self.sbp_revenue += sbp_revenue
+        self.sbp_profits += sbp_profit
         self.basefees += self.basefee_usd
         self.num_tx += 1
 

@@ -6,7 +6,10 @@
 
 import matplotlib.pyplot as pl
 import numpy as np
+from ing_theme_matplotlib import mpl_style
 from dex import DEX, ETH_PRICE
+# Constants for plotting
+pl.rcParams["savefig.dpi"] = 200
 
 # the volatility of ETH price per one year - approximately matches the recent year's data
 ETH_VOLATILITY = 0.5
@@ -14,6 +17,8 @@ ETH_VOLATILITY = 0.5
 ETH_VOLATILITY_PER_SECOND = ETH_VOLATILITY / np.sqrt(365 * 24 * 60 * 60)
 
 BLOCK_TIMES_SEC = [1, 2, 3, 4, 6, 12]
+
+SIMULATION_DURATION_SEC = 3600
 
 NUM_SIMULATIONS = 1000
 
@@ -39,14 +44,14 @@ def estimate_performance(prices, swap_fee_bps, basefee_usd):
         dex.set_basefee_usd(basefee_usd)
     for price in prices:
         dex.maybe_arbitrage(price)
-    return dex.lvr, dex.lp_fees, dex.sbp_revenue, dex.basefees, dex.num_tx
+    return dex.lvr, dex.lp_fees, dex.sbp_profits, dex.basefees, dex.num_tx
 
 ############################################################
 
-def estimate_mean_performance(all_prices, swap_fee_bps, basefee_usd=None):
+def estimate_mean_performance(all_prices, swap_fee_bps, basefee_usd=None, num_blocks=None):
     all_lvr = []
     all_lp_fees = []
-    all_sbp_revenue = []
+    all_sbp_profits = []
     all_basefees = []
     all_tx = []
 
@@ -56,62 +61,72 @@ def estimate_mean_performance(all_prices, swap_fee_bps, basefee_usd=None):
 
     for sim in range(all_prices.shape[1]):
         prices = all_prices[:,sim]
+        if num_blocks is not None:
+            prices = prices[:num_blocks]
         lvr, lp_fees, spb_revenue, basefees, num_tx = \
             estimate_performance(prices, swap_fee_bps, basefee_usd)
         all_lvr.append(lvr)
         all_lp_fees.append(lp_fees)
-        all_sbp_revenue.append(spb_revenue)
+        all_sbp_profits.append(spb_revenue)
         all_basefees.append(basefees)
         all_tx.append(num_tx)
 
-    return np.mean(all_lvr), np.mean(all_lp_fees), np.mean(all_sbp_revenue), \
+    return np.mean(all_lvr), np.mean(all_lp_fees), np.mean(all_sbp_profits), \
         np.mean(all_basefees), np.mean(all_tx)
 
 ############################################################
 
-# simulate the performance of 100 12-second long intervals, depending on the block time
-def simulate_some_blocks():
-    n = 100 * 12
+# simulate the performance of some 12-second long intervals, depending on the block time
+def simulate_some_blocks(basefee_usd):
+    n = SIMULATION_DURATION_SEC
     all_prices = get_price_paths(n, sigma=ETH_VOLATILITY_PER_SECOND, mu=0.0)
     all_lvr = []
     all_lp_fees = []
+    all_lp_losses = []
     all_basefees = []
-    all_sbp_revenue = []
+    all_sbp_profits = []
     all_num_tx = []
     for block_time in BLOCK_TIMES_SEC:
         if block_time > 1:
             all_prices = all_prices.reshape(n // block_time, block_time, NUM_SIMULATIONS)
 
         print("compute performance for block time", block_time)
-        lvr, lp_fees, sbp_revenue, basefees, num_tx = \
-            estimate_mean_performance(all_prices, swap_fee_bps=5)
+        lvr, lp_fees, sbp_profits, basefees, num_tx = \
+            estimate_mean_performance(all_prices, swap_fee_bps=5, basefee_usd=basefee_usd)
         all_lvr.append(lvr)
         all_lp_fees.append(lp_fees)
-        all_sbp_revenue.append(sbp_revenue)
+        all_lp_losses.append(lvr - lp_fees)
+        all_sbp_profits.append(sbp_profits)
         all_basefees.append(basefees)
         all_num_tx.append(num_tx)
     
     fig, ax = pl.subplots()
-    fig.set_size_inches((6, 4))
+    fig.set_size_inches((7, 4.5))
 
-    pl.plot(BLOCK_TIMES_SEC, all_lvr, label="LVR", marker="D", color="red")
-    pl.plot(BLOCK_TIMES_SEC, all_lp_fees, label="LP fees", marker="o", color="blue")
-    pl.plot(BLOCK_TIMES_SEC, all_sbp_revenue, label="SBP revenue", marker="s", color="black")
+    pl.plot(BLOCK_TIMES_SEC, all_lvr, label="LVR", marker="D", color="black")
+    pl.plot(BLOCK_TIMES_SEC, all_lp_fees, label="LP fees", marker="o", color="green")
+    pl.plot(BLOCK_TIMES_SEC, all_sbp_profits, label="SBP profits", marker="s", color="blue")
+    pl.plot(BLOCK_TIMES_SEC, all_lp_losses, label="LP losses", marker="x", color="red")
     pl.plot(BLOCK_TIMES_SEC, all_basefees, label="Basefees (burnt ETH)", marker="^", color="orange")
 
+    pl.title(f"Results with ${basefee_usd} basefee")
     pl.xlabel("Block time, sec")
-    pl.ylabel("Revenue, $")
+    pl.ylabel("Profits / losses, $")
     pl.legend()
     pl.ylim(ymin=0)
 
-    pl.show()
+    pl.savefig(f"cex_dex_arbitrage_metrics_{basefee_usd}_basefee.png", bbox_inches='tight')
+    #pl.show()
     pl.close()
 
 ############################################################x
     
 def main():
+    mpl_style(False)
     np.random.seed(123456)
-    simulate_some_blocks()
+    simulate_some_blocks(0.0)
+    simulate_some_blocks(10.0)
+    simulate_some_blocks(30.0)
 
 
 if __name__ == '__main__':
