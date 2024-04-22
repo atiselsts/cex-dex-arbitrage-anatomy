@@ -1,6 +1,6 @@
 # Code for the "CEX/DEX arbitrage anatomy" simulations
 
-This repository contains Python code for the artice [""CEX/DEX arbitrage anatomy""](https://atise.medium.com/xxx).
+This repository contains Python code for the artice [""CEX/DEX arbitrage anatomy""](https://atise.medium.com/anatomy-of-cex-dex-arbitrage-481936c83831).
 
 The code is used to produce the graphs in the published article.
 
