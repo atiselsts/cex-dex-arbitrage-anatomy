@@ -9,6 +9,7 @@ import matplotlib.pyplot as pl
 import numpy as np
 from dex import DEX, ETH_PRICE
 from simulation_examples import estimate_mean_performance, get_price_paths
+from numba import jit
 
 # -- the setttings are as in the paper
 
@@ -24,17 +25,23 @@ ETH_VOLATILITY_PER_SECOND = ETH_VOLATILITY_PER_DAY / np.sqrt(SEC_PER_DAY)
 
 NUM_SIMULATIONS = 1000
 
-# this should be divisible by each of the block times we want to investigate
+# this should be divisible by each of the block times that we want to investigate
 N_SECONDS = 300000
 
 ############################################################
 
-def test_probs_uniform(block_time, fee_bps):
+@jit(nopython=True)
+def test_tx_probs(block_time, fee_bps, use_poisson=False):
     fee_factor = (10_000 - fee_bps) / 10_000
 
     n_blocks = NUM_SIMULATIONS * N_SECONDS // block_time
     sigma = ETH_VOLATILITY_PER_SECOND * np.sqrt(block_time)
     price_factors = np.random.normal(1.0, sigma, n_blocks)
+    if use_poisson:
+        # generate the block time distribution
+        block_time_distr = np.random.exponential(scale=1.0, size=len(price_factors))
+        # transform the price factors taking into account the non-uniform block times
+        price_factors = 1.0 + np.sqrt(block_time_distr) * (price_factors - 1)
 
     cex_price = 1.0
     # set initial price to a random one in the non-arbitrage region
@@ -62,43 +69,10 @@ def quick_sim_uniform():
     for block_time in BLOCK_TIMES_SEC:
         all_prob_per_block[block_time] = []
         for swap_fee_bps in SWAP_FEE_BPS:
-            tx_prob = test_probs_uniform(block_time, swap_fee_bps)
+            tx_prob = test_tx_probs(block_time, swap_fee_bps, False)
             all_prob_per_block[block_time].append(tx_prob)
 
     print_results("arb prob %", all_prob_per_block)
-
-############################################################
-
-def test_probs_poisson(block_time, fee_bps):
-    fee_factor = (10_000 - fee_bps) / 10_000
-
-    n_blocks = NUM_SIMULATIONS * N_SECONDS // block_time
-    sigma = ETH_VOLATILITY_PER_SECOND * np.sqrt(block_time)
-    price_factors = np.random.normal(1.0, sigma, n_blocks)
-    # generate the block time distribution
-    block_time_distr = np.random.exponential(scale=1.0, size=len(price_factors))
-    # transform the price factors taking into account the non-uniform block times
-    price_factors = 1.0 + np.sqrt(block_time_distr) * (price_factors - 1)
-
-    cex_price = 1.0
-    # set initial price to a random one in the non-arbitrage region
-    pool_price = np.random.uniform(cex_price * fee_factor, cex_price / fee_factor)
-    n_tx = 0
-    for f in price_factors:
-        cex_price *= f
-        if cex_price > pool_price:
-            target_price = cex_price * fee_factor
-            if target_price < pool_price:
-                continue
-        else:
-            target_price = cex_price / fee_factor
-            if target_price > pool_price:
-                continue
-        n_tx += 1
-        pool_price = target_price
-
-    prob_tx = n_tx / n_blocks
-    return prob_tx
 
 
 def quick_sim_poisson():
@@ -106,7 +80,7 @@ def quick_sim_poisson():
     for block_time in BLOCK_TIMES_SEC:
         all_prob_per_block[block_time] = []
         for swap_fee_bps in SWAP_FEE_BPS:
-            tx_prob = test_probs_poisson(block_time, swap_fee_bps)
+            tx_prob = test_tx_probs(block_time, swap_fee_bps, True)
             all_prob_per_block[block_time].append(tx_prob)
 
     print_results("arb prob %", all_prob_per_block)
@@ -114,7 +88,7 @@ def quick_sim_poisson():
 ############################################################
 
 def print_results(msg, data):
-    print(f"swap fee:                         1bp   5bp  10bp  30bp 100bp")
+    print(f"swap fee:                          1bp   5bp  10bp  30bp 100bp")
     for block_time in BLOCK_TIMES_SEC[::-1]:
         print(f"block time {block_time: 5d} sec, {msg}:", end="")
         for i in range(len(SWAP_FEE_BPS)):

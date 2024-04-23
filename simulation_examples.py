@@ -2,7 +2,8 @@
 
 #
 # This script builds on the based CEX/DEX arb trading examples and
-# computes statistics of the DEX performanc based on a large number of simulations.
+# computes statistics of the DEX performance based on a large number of simulations.
+#
 
 import matplotlib.pyplot as pl
 import numpy as np
@@ -119,14 +120,53 @@ def simulate_some_blocks(basefee_usd):
     #pl.show()
     pl.close()
 
+    return all_lp_losses
+
 ############################################################x
     
 def main():
     mpl_style(False)
     np.random.seed(123456)
-    simulate_some_blocks(0.0)
-    simulate_some_blocks(10.0)
-    simulate_some_blocks(30.0)
+
+    lp_losses = {}
+    for basefee in [0, 10, 30]:
+        lp_losses[basefee] = simulate_some_blocks(basefee)
+
+    fig, ax = pl.subplots()
+    fig.set_size_inches((5, 3.5))
+
+    markers = {0: "x", 10: "+", 30: "D"}
+    for basefee in [0, 10, 30]:
+        pl.plot(BLOCK_TIMES_SEC, lp_losses[basefee], label=f"Basefee=${basefee}",
+                marker=markers[basefee], color="red")
+
+    n = 1000
+    max_block = BLOCK_TIMES_SEC[-1]
+    half_block_index = -2
+    x = np.linspace(0, max_block, n)
+    sqrt_x = [np.sqrt(u) for u in x]
+
+    # could do a more accurate fit for the models if wanted,
+    # but at the end it doesn't matter that much
+    k = lp_losses[0][half_block_index] / sqrt_x[n // 2]
+    sqrt_model = [k * u for u in sqrt_x]
+
+    const = lp_losses[30][-2] - lp_losses[0][-2]
+    #k = (lp_losses[30][half_block_index] + const) / sqrt_x[n // 2]
+    sqrt_plus_const_model = [k * u + const for u in sqrt_x]
+
+    pl.plot(x, sqrt_model, label="Model: $\sqrt{BT}$", color="black")
+    pl.plot(x, sqrt_plus_const_model, label="Model: $\sqrt{BT} + const$", color="brown")
+
+    pl.xlabel("Block time, sec")
+    pl.ylabel("LP losses, $")
+    pl.legend()
+    pl.ylim(ymin=0)
+
+    pl.savefig(f"cex_dex_arbitrage_lp_losses_basefee.png", bbox_inches='tight')
+    pl.close()
+
+
 
 
 if __name__ == '__main__':

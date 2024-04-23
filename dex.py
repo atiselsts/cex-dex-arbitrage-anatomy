@@ -53,12 +53,13 @@ class DEX:
     def set_basefee_usd(self, basefee_usd):
         self.basefee_usd = basefee_usd
 
+
     def price(self):
         return self.reserve_y / self.reserve_x
 
 
-    def k(self):
-        return self.reserve_x * self.reserve_y
+    def liquidity(self):
+        return sqrt(self.reserve_x * self.reserve_y)
 
     
     def get_amounts_to_target_price(self, target_price):
@@ -66,7 +67,7 @@ class DEX:
             target_price = self.preset_target_price
 
         sqrt_target_price = sqrt(target_price)
-        L = sqrt(self.reserve_x * self.reserve_y)
+        L = self.liquidity()
         delta_x = L / sqrt_target_price - self.reserve_x
         delta_y = L * sqrt_target_price - self.reserve_y
         return (delta_x, delta_y)
@@ -76,8 +77,7 @@ class DEX:
         amount_in_x_without_fee = amount_in_x / self.fee_factor
         print(amount_in_x_without_fee, amount_in_x)
 
-        #k = self.reserve_x * self.reserve_y
-        price = self.reserve_y / self.reserve_x
+        price = self.price()
         self.lp_fees += (amount_in_x - amount_in_x_without_fee) * price
         self.reserve_x += amount_in_x_without_fee
         y_out = amount_in_x_without_fee * self.reserve_y / self.reserve_x
@@ -92,7 +92,6 @@ class DEX:
     def swap_y_to_x(self, amount_in_y):
         amount_in_y_without_fee = amount_in_y / self.fee_factor
 
-        k = self.reserve_x * self.reserve_y
         self.lp_fees += amount_in_y - amount_in_y_without_fee
         self.reserve_y += amount_in_y_without_fee
         x_out = amount_in_y_without_fee * self.reserve_x / self.reserve_y
@@ -105,15 +104,13 @@ class DEX:
 
 
     def get_target_price(self, cex_price):
-        dex_price = self.reserve_y / self.reserve_x
+        dex_price = self.price()
         if cex_price > dex_price:
             target_price = cex_price / self.fee_factor
-            #print(dex_price, target_price, cex_price)
             if target_price < dex_price:
                 return None
         else:
             target_price = cex_price * self.fee_factor
-            #print(dex_price, target_price, cex_price)
             if target_price > dex_price:
                 return None
         return target_price
@@ -169,7 +166,7 @@ class DEX:
             new_reserve_x = self.reserve_x + delta_x
             new_reserve_y = self.reserve_y + delta_y
             lp_loss_vs_lvr = (single_transaction_lvr - lp_fee) / single_transaction_lvr
-            print(f" DEX price: {self.reserve_y/self.reserve_x:.4f}->{new_reserve_y/new_reserve_x:.4f} CEX price: {cex_price:.4f} LP fee={lp_fee:.4f} LVR={single_transaction_lvr:.4f} loss: {100*lp_loss_vs_lvr:.1f}%")
+            print(f" DEX price: {self.reserve_y/self.reserve_x:.4f}->{new_reserve_y/new_reserve_x:.4f} CEX price: {cex_price:.4f} LP fee={lp_fee:.2f} LVR={single_transaction_lvr:.2f} loss: {100*lp_loss_vs_lvr:.1f}%")
 
         self.reserve_x += delta_x
         self.reserve_y += delta_y

@@ -8,7 +8,7 @@
 #
 # Warning! This assumes that LPs do not accumulate or compound their fees, but withdraw and rapidly convert to USD.
 # This is more similar to Uniswap v3 rather than to Uniswap v2 (compounding fees).
-# The single-direction swaps are also path-independent (since the pool's reserves do not grow with the fees).
+# The single-direction swaps are also path-independent, since the pool's reserves do not grow with the fees.
 
 import matplotlib.pyplot as pl
 import numpy as np
@@ -128,7 +128,7 @@ def example_4():
 #
 # Check price (in)dependence of the swap paths
 #
-def example_0():
+def path_dependence_check():
     dex1 = DEX()
     dex1.swap_x_to_y(10.0)
     dex1.swap_y_to_x(10000)
