@@ -12,9 +12,6 @@ ETH_PRICE = 3000
 
 POOL_LIQUIDITY_USD = 1_000_000_000
 
-POOL_RESERVES_USD = POOL_LIQUIDITY_USD / 2
-POOL_RESERVES_ETH = POOL_RESERVES_USD / ETH_PRICE
-
 # LP fee, in parts per million (ppm)
 POOL_FEE_PPM = 500 # corresponds to 0.05%
 
@@ -24,7 +21,11 @@ DEFAULT_BASEFEE_USD = 10
 ############################################################
 
 class DEX:
-    def __init__(self):
+    def __init__(self, pool_liquidity_usd=POOL_LIQUIDITY_USD):
+
+        POOL_RESERVES_USD = POOL_LIQUIDITY_USD / 2
+        POOL_RESERVES_ETH = POOL_RESERVES_USD / ETH_PRICE
+
         # -- immutables
         self.fee_ppm = POOL_FEE_PPM
         self.fee_factor = 1_000_000 / (1_000_000 - self.fee_ppm)

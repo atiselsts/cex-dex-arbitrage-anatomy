@@ -28,6 +28,7 @@ It also makes the standard assumptions behing the LVR model.
 
 * `simple_examples.py` - intuition-building examples directly discussed in the article.
 * `simulation_examples.py` - examples on which the article's graphs are based.
+* `simulation_examples_arbitrum.py` - tweaked examples for Arbitrum's block time and liquidity.
 * `replication.py` - code that aims to replicate and extend the Table 1 from the paper
   "Automated Market Making and Arbitrage Profits in the Presence of Fees".
 
