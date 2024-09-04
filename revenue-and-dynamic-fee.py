@@ -14,12 +14,11 @@ pl.rcParams["savefig.dpi"] = 200
 
 SIMULATION_DURATION_SEC = 36000
 
-NUM_SIMULATIONS = 1000
+NUM_SIMULATIONS = 300
 
 ############################################################
 
 def get_price_paths(n, sigma, mu, M=NUM_SIMULATIONS):
-#    mu = 0.00001 # XXX
     St = np.exp((mu - sigma ** 2 / 2) + sigma * np.random.normal(0, 1, size=(M, n-1)).T)
 
     # we want the initial prices to be randomly distributed in the pool's non-arbitrage space
@@ -113,7 +112,7 @@ def simulate_some_blocks(dynamic_fee_proportion):
     pl.xlabel("$\\sigma$")
     pl.ylabel("Profits / losses, $")
     pl.legend()
-    pl.ylim([0, 200000])
+    pl.ylim([0, 100000])
 
     pl.savefig(f"cex_dex_arbitrage_metrics_dynamic_fee_{dynamic_fee_proportion}.png", bbox_inches='tight')
     #pl.show()

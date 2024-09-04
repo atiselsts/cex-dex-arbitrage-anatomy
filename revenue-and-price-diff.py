@@ -74,35 +74,13 @@ def simulate_revenue(alpha):
     pl.close()
 
 
-    fig, ax = pl.subplots()
-    fig.set_size_inches((7, 4.5))
-
-    result = [0 if v == 0 else 100 * u / v for u, v in zip(all_lp_fees, all_sbp_profits)]
-
-    #x = dynamic_fees_bps
-    #pl.plot(x, all_lvr, label="LVR", marker="D", color="black")
-    #pl.plot(x, all_lp_fees, label="LP fees", marker="o", color="green")
-    #pl.plot(x, all_sbp_profits, label="SBP profits", marker="s", color="blue")
-    #pl.plot(x, all_lp_losses, label="LP losses", marker="x", color="red")
-    #    pl.plot(x, all_basefees, label="Basefees (burnt ETH)", marker="^", color="orange")
-    pl.plot(x, result, label="LP revenue / Arb profit", marker="o", color="black")
-
-    pl.title(f"Results with $\\alpha$={alpha}")
-    pl.xlabel("Dynamic fee, bps")
-    pl.ylabel("Relative revenue, %")
-    pl.legend()
-    pl.ylim(ymin=0)
-
-    pl.savefig(f"relative_revenue_with_dynamic_fee_alpha{alpha}.png", bbox_inches='tight')
-    pl.close()
-
 ############################################################x
     
 def main():
     mpl_style(False)
     np.random.seed(123456)
     simulate_revenue(alpha=1.01)
-    simulate_revenue(alpha=1.05)
+    simulate_revenue(alpha=1.1)
 
 
 if __name__ == '__main__':

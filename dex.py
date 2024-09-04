@@ -108,10 +108,9 @@ class DEX:
 
     def set_dynamic_fee(self, cex_price, dex_price):
         factor = max(cex_price, dex_price) / min(cex_price, dex_price)
-        self.dynamic_fee_proportion
-        self.fee_ppm = (factor - 1) * self.dynamic_fee_proportion * 1_000_000
+        self.fee_ppm = 1_000_000 * (factor - 1) * self.dynamic_fee_proportion
         self.fee_factor = 1_000_000 / (1_000_000 - self.fee_ppm)
-        
+
 
     def get_target_price(self, cex_price):
         dex_price = self.reserve_y / self.reserve_x
