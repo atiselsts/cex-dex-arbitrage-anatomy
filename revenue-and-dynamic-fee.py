@@ -106,9 +106,10 @@ def simulate_some_blocks(dynamic_fee_proportion):
     pl.plot(x, all_lvr, label="LVR", marker="D", color="black")
     pl.plot(x, all_lp_fees, label="LP fees", marker="o", color="green")
     pl.plot(x, all_sbp_profits, label="SBP profits", marker="s", color="blue")
-    pl.plot(x, all_lp_losses, label="LP losses", marker="x", color="red")
-    pl.plot(x, all_basefees, label="Basefees (burnt ETH)", marker="^", color="orange")
+    #pl.plot(x, all_lp_losses, label="LP losses", marker="x", color="red")
+    #pl.plot(x, all_basefees, label="Basefees (burnt ETH)", marker="^", color="orange")
 
+    pl.title(f"AMM performance with fee={dynamic_fee_proportion}$\\cdot\\alpha$")
     pl.xlabel("$\\sigma$")
     pl.ylabel("Profits / losses, $")
     pl.legend()

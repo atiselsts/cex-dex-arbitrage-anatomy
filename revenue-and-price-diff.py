@@ -58,12 +58,11 @@ def simulate_revenue(alpha):
     pl.plot(x, all_lvr, label="LVR", marker="D", color="black")
     pl.plot(x, all_lp_fees, label="LP fees", marker="o", color="green")
     pl.plot(x, all_sbp_profits, label="SBP profits", marker="s", color="blue")
-    pl.plot(x, all_lp_losses, label="LP losses", marker="x", color="red")
-    #    pl.plot(x, all_basefees, label="Basefees (burnt ETH)", marker="^", color="orange")
+    #pl.plot(x, all_lp_losses, label="LP losses", marker="x", color="red")
 
-    pl.vlines((sqrt_alpha - 1) * 10000, 0, max(all_lvr))
+    pl.vlines((sqrt_alpha - 1) * 10000, 0, max(all_lvr), label="$\\sqrt{\\alpha}$")
 
-    
+
     pl.title(f"Results with $\\alpha$={alpha}")
     pl.xlabel("Dynamic fee, bps")
     pl.ylabel("Profits / losses, $")
