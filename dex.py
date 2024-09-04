@@ -29,6 +29,8 @@ class DEX:
         self.fee_ppm = POOL_FEE_PPM
         self.fee_factor = 1_000_000 / (1_000_000 - self.fee_ppm)
         self.basefee_usd = DEFAULT_BASEFEE_USD
+        self.is_dynamic_fee = False
+        self.dynamic_fee_proportion = 0.5
         # -- pool's state
         # the price is fully determined by the reserves (real or virtual)
         self.reserve_x = POOL_RESERVES_ETH
@@ -104,8 +106,17 @@ class DEX:
         return x_out
 
 
+    def set_dynamic_fee(self, cex_price, dex_price):
+        factor = max(cex_price, dex_price) / min(cex_price, dex_price)
+        self.dynamic_fee_proportion
+        self.fee_ppm = (factor - 1) * self.dynamic_fee_proportion * 1_000_000
+        self.fee_factor = 1_000_000 / (1_000_000 - self.fee_ppm)
+        
+
     def get_target_price(self, cex_price):
         dex_price = self.reserve_y / self.reserve_x
+        if self.is_dynamic_fee:
+            self.set_dynamic_fee(cex_price, dex_price)
         if cex_price > dex_price:
             target_price = cex_price / self.fee_factor
             #print(dex_price, target_price, cex_price)
