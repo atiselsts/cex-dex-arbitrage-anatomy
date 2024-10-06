@@ -8,15 +8,15 @@ from math import sqrt
 
 # Constants for the examples
 
-ETH_PRICE = 3000
+ETH_PRICE = 2450
 
-POOL_LIQUIDITY_USD = 1_000_000_000
+POOL_LIQUIDITY_USD = 909_000_000
 
 # LP fee, in parts per million (ppm)
 POOL_FEE_PPM = 500 # corresponds to 0.05%
 
-# For simplicity, assume that each swap burns exactly $10 worth of Ether
-DEFAULT_BASEFEE_USD = 10
+# For simplicity, assume that each swap burns exactly $2 worth of Ether
+DEFAULT_BASEFEE_USD = 2
 
 ############################################################
 

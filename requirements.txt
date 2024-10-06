@@ -2,3 +2,4 @@ numpy
 matplotlib
 ing-theme-matplotlib
 numba
+yfinance
