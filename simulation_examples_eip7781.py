@@ -131,7 +131,7 @@ def main():
     mpl_style(False)
     np.random.seed(123456)
 
-    basefees_usd = [0, 2, 4]
+    basefees_usd = [0, 2, 4, 10]
 
     lp_losses = {}
     for basefee in basefees_usd:
@@ -140,10 +140,10 @@ def main():
     fig, ax = pl.subplots()
     fig.set_size_inches((5, 3.5))
 
-    markers = {0: "x", 2: "+", 4: "D"}
+    markers = {0: "x", 2: "+", 4: "D", 10: "o"}
     for basefee in basefees_usd:
         factor = lp_losses[basefee][-1] / lp_losses[basefee][0]
-        print(f"basefee=${basefee} improvement={100 * (factor - 1):.2f}%")
+        print(f"basefee=${basefee} improvement={100 * (factor - 1):.1f}%")
         pl.plot(BLOCK_TIMES_SEC, lp_losses[basefee], label=f"Basefee=${basefee}",
                 marker=markers[basefee], color="red")
 
@@ -154,16 +154,17 @@ def main():
     x = np.linspace(min_block, max_block, n)
     sqrt_x = [np.sqrt(u) for u in x]
 
-    # could do a more accurate fit for the models if wanted,
-    # but at the end it doesn't matter that much
-    k = lp_losses[0][half_block_index] / sqrt_x[n // 2]
-    sqrt_model = [k * u for u in sqrt_x]
+    if False:
+        # could do a more accurate fit for the models if wanted,
+        # but at the end it doesn't matter that much
+        k = lp_losses[0][half_block_index] / sqrt_x[n // 2]
+        sqrt_model = [k * u for u in sqrt_x]
 
-    const = lp_losses[basefees_usd[-1]][-2] - lp_losses[basefees_usd[0]][-2]
-    sqrt_plus_const_model = [k * u + const for u in sqrt_x]
+        const = lp_losses[basefees_usd[-1]][-2] - lp_losses[basefees_usd[0]][-2]
+        sqrt_plus_const_model = [k * u + const for u in sqrt_x]
 
-    pl.plot(x, sqrt_model, label="Model: $\\sqrt{BT}$", color="black")
-    pl.plot(x, sqrt_plus_const_model, label="Model: $\\sqrt{BT} + const$", color="brown")
+        pl.plot(x, sqrt_model, label="Model: $\\sqrt{BT}$", color="black")
+        pl.plot(x, sqrt_plus_const_model, label="Model: $\\sqrt{BT} + const$", color="brown")
 
     pl.xlabel("Block time, sec")
     pl.ylabel("LP losses, $")
