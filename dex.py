@@ -118,17 +118,8 @@ class DEX:
             margin = 0
         low = range_low - margin
         high = range_high + margin
-
-        #print("  price=", cex_price)
-        #print("  tick =", tick, "low=", low, "high=", high, "range=", high - low)
-
-        #old_liquidty = self.pos_liquidity
         usd = self.remove_position(cex_price)
-        #print("  usd=", usd)
         self.add_position(usd + additional_usd, low, high)
-        #new_liquidty = self.pos_liquidity
-        #if old_liquidty:
-        #    print("  factor=", new_liquidty / old_liquidty)
 
 
     def rebalance_above(self, cex_price, width_in_ticks, additional_usd):
@@ -138,18 +129,8 @@ class DEX:
         margin = width_in_ticks - self.tick_spacing
         low = range_low
         high = range_high + margin
-
-        #print("price=", cex_price)
-        #print("  tick =", tick, "low=", low, "high=", high, "range=", high - low)
-
-        #old_liquidty = self.pos_liquidity
         usd = self.remove_position(cex_price)
-        #print("  usd=", usd)
         self.add_position(usd + additional_usd, low, high)
-        #new_liquidty = self.pos_liquidity
-        #if old_liquidty:
-            #print("  factor=", new_liquidty / old_liquidty)
-            #assert old_liquidty >= new_liquidty
 
     
     def get_fee_share(self, swap_price_start, swap_price_end):
@@ -159,7 +140,6 @@ class DEX:
         tick_end = to_tick(swap_price_end)
         total_ticks = tick_end - tick_start + 1
 
-        # this is a very approximate division, but should be good enough
         if tick_start < self.pos_tick_low:
             if tick_end < self.pos_tick_low:
                 ticks_in_range = 0
@@ -176,11 +156,8 @@ class DEX:
         else:
             ticks_in_range = 0
 
+        # this is a very approximate accounting, but should be good enough on the average
         proportion_in_range = ticks_in_range / total_ticks
-#        if ticks_in_range != total_ticks:
-#            print(swap_price_low, tick_start)
-#            print(swap_price_low, tick_end)
-#            print(ticks_in_range, total_ticks)
         assert proportion_in_range <= 1
 
         return proportion_in_range * self.pos_liquidity_share
@@ -321,10 +298,8 @@ class DEX:
         share = self.get_fee_share(price_start, price_end)
         if lp_fee_usd != 0:
             self.pos_fees_usd += share * lp_fee_usd
-            #print(f"earn {share * lp_fee_usd} usd")
         else:
             self.pos_fees_eth += share * lp_fee_eth
-            #print(f"earn {share * lp_fee_eth} eth")
 
         # then update the cumulative metrics
         self.volume += abs(delta_y) + lp_fee
